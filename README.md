@@ -28,6 +28,13 @@ Right now, this project does three main things:
 
 This repository packages the full local development stack: Airflow, PostgreSQL, Redis, Celery workers, a custom Aero plugin, and a demo DAG for experimentation.
 
+## Demo
+
+<video controls width="900">
+  <source src="demo-aero.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ## Table of Contents
 
 - [Features](#features)
