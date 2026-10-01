@@ -32,6 +32,8 @@ This repository packages the full local development stack: Airflow, PostgreSQL, 
 
 [![Aero demo](https://img.youtube.com/vi/8SOVYaV-yZE/maxresdefault.jpg)](https://youtu.be/8SOVYaV-yZE)
 
+[▶ Watch the demo on YouTube](https://youtu.be/8SOVYaV-yZE)
+
 ## Table of Contents
 
 - [Features](#features)
