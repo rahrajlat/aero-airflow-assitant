@@ -42,13 +42,25 @@ At the moment, this is focused on DAG pages and related DAG/task context. The de
 
 ### Chainlit
 
-[Chainlit](https://github.com/Chainlit/chainlit) is a lightweight framework for building chat-based AI applications with Python. In this project, it provides the conversational UI for Aero and lets the assistant talk to the user in a browser-based chat experience.
+[Chainlit](https://github.com/Chainlit/chainlit) is a lightweight framework for building chat-based AI applications with Python. It eases the creation of a frontend by providing a Pythonic way to add chat interfaces, so developers can focus on the assistant logic instead of building the conversational UI from scratch. In this project, it provides the browser-based chat experience for Aero.
 
 ### Strands
 
 [Strands](https://strandsagents.com/) is a framework for building tool-using AI agents. It helps connect an LLM to structured tools so the model can act on real data sources instead of only answering from general knowledge. In Aero, that means the assistant can inspect Airflow metadata, read DAG source files, and summarize task flows and risks using real project context.
 
 Together, they give Aero a simple but powerful pattern: a chat UI from Chainlit and tool-calling agent behavior from Strands, grounded in Airflow metadata and source code.
+
+## Current tools in Aero
+
+The agent currently exposes these tools to the LLM:
+
+- `get_airflow_dag_metadata(dag_id)`: returns the DAG metadata, task definitions, operators, and dependency graph
+- `get_airflow_dag_source(dag_id)`: returns the Python source code for the selected DAG
+- `summarize_airflow_task_flow(dag_id)`: produces a concise task-by-task dependency summary
+- `summarize_airflow_schedule(dag_id)`: explains the DAG schedule, catchup behavior, tags, and run settings
+- `scan_airflow_dag_risks(dag_id)`: runs a lightweight risk scan for missing description, missing schedule, retry gaps, and obvious DAG patterns
+
+These tools are the current building blocks behind Aero's DAG-aware answers in the local Airflow experience.
 
 ## Demo
 
