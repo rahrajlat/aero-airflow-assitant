@@ -4,17 +4,26 @@ const AERO_ROOT_ID = "aero-companion-root";
 const AERO_STYLE_ID = "aero-companion-styles";
 const AERO_PANEL_ID = "aero-chainlit-panel";
 const AERO_CONTEXT_STORAGE_KEY = "aero_context_id";
+const AERO_POSITION_STORAGE_KEY = "aero_companion_position";
 let lastSavedContextKey = "";
 let routeObserverStarted = false;
+let resizeObserverStarted = false;
 
 type AeroContext = {
   pageType?: string;
+  pageTitle?: string;
+  routeParts?: string[];
   dagId?: string;
   taskId?: string;
   runId?: string;
   path?: string;
   url?: string;
   state?: "idle" | "success" | "failed" | "thinking";
+};
+
+type AeroPosition = {
+  x: number;
+  y: number;
 };
 
 declare global {
@@ -48,6 +57,10 @@ function ensureStyles() {
     #aero-companion-root *, #aero-companion-root *::before, #aero-companion-root *::after {
       box-sizing: border-box;
     }
+    #aero-companion-root[data-positioned="true"] {
+      bottom: auto;
+      right: auto;
+    }
     #aero-chainlit-panel {
       all: initial;
       background: #121a2b;
@@ -66,6 +79,10 @@ function ensureStyles() {
     #aero-chainlit-panel[data-open="true"] {
       display: flex;
       flex-direction: column;
+    }
+    #aero-chainlit-panel[data-positioned="true"] {
+      bottom: auto;
+      right: auto;
     }
     #aero-chainlit-panel[data-expanded="true"] {
       bottom: max(18px, env(safe-area-inset-bottom));
@@ -141,8 +158,10 @@ function ensureStyles() {
       height: 86px;
       justify-content: center;
       outline: none;
+      touch-action: none;
       transform-origin: 50% 70%;
       transition: filter 180ms ease, transform 180ms ease;
+      user-select: none;
       width: 86px;
     }
     .aero-companion:hover, .aero-companion:focus-visible {
@@ -151,6 +170,11 @@ function ensureStyles() {
     }
     .aero-companion:active {
       transform: scale(0.98) translateY(2px);
+    }
+    #aero-companion-root[data-dragging="true"] .aero-companion {
+      animation: none;
+      filter: drop-shadow(0 14px 22px rgba(14, 116, 144, 0.32));
+      transform: scale(1.04);
     }
     .aero-companion__svg {
       display: block;
@@ -305,6 +329,8 @@ function detectPageContext(): AeroContext {
 
   return {
     pageType,
+    pageTitle: document.title || undefined,
+    routeParts: parts,
     dagId,
     runId,
     taskId,
@@ -323,6 +349,8 @@ function buildChainlitUrl(context: AeroContext) {
 function contextKey(context: AeroContext) {
   return JSON.stringify({
     pageType: context.pageType,
+    pageTitle: context.pageTitle,
+    routeParts: context.routeParts,
     dagId: context.dagId,
     runId: context.runId,
     taskId: context.taskId,
@@ -339,6 +367,79 @@ function getAeroContextId() {
   }
   document.cookie = `aero_context_id=${encodeURIComponent(contextId)}; path=/; SameSite=Lax`;
   return contextId;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getSavedAeroPosition(): AeroPosition | undefined {
+  try {
+    const saved = window.localStorage.getItem(AERO_POSITION_STORAGE_KEY);
+    if (!saved) {
+      return undefined;
+    }
+    const parsed = JSON.parse(saved) as Partial<AeroPosition>;
+    if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+      return parsed as AeroPosition;
+    }
+  } catch (error) {
+    console.warn("Unable to read Aero position", error);
+  }
+  return undefined;
+}
+
+function saveAeroPosition(position: AeroPosition) {
+  try {
+    window.localStorage.setItem(AERO_POSITION_STORAGE_KEY, JSON.stringify(position));
+  } catch (error) {
+    console.warn("Unable to save Aero position", error);
+  }
+}
+
+function applyAeroPosition(root: HTMLElement, position: AeroPosition, shouldSave = true) {
+  const margin = 8;
+  const width = root.offsetWidth || 86;
+  const height = root.offsetHeight || 86;
+  const next = {
+    x: clamp(position.x, margin, window.innerWidth - width - margin),
+    y: clamp(position.y, margin, window.innerHeight - height - margin)
+  };
+
+  root.style.left = `${next.x}px`;
+  root.style.top = `${next.y}px`;
+  root.dataset.positioned = "true";
+  if (shouldSave) {
+    saveAeroPosition(next);
+  }
+  positionOpenPanel(root);
+}
+
+function positionOpenPanel(root = document.getElementById(AERO_ROOT_ID)) {
+  const panel = document.getElementById(AERO_PANEL_ID);
+  if (!root || !panel || panel.getAttribute("data-open") !== "true" || panel.getAttribute("data-expanded") === "true") {
+    return;
+  }
+
+  const gap = 12;
+  const margin = 10;
+  const companionRect = root.getBoundingClientRect();
+  const panelWidth = Math.min(420, window.innerWidth - margin * 2);
+  const panelHeight = Math.min(680, window.innerHeight - margin * 2);
+  const opensLeft = companionRect.left + companionRect.width / 2 > window.innerWidth / 2;
+  const x = opensLeft ? companionRect.right - panelWidth : companionRect.left;
+  const y = companionRect.top >= panelHeight + gap + margin ? companionRect.top - panelHeight - gap : companionRect.bottom + gap;
+
+  panel.style.left = `${clamp(x, margin, window.innerWidth - panelWidth - margin)}px`;
+  panel.style.top = `${clamp(y, margin, window.innerHeight - panelHeight - margin)}px`;
+  panel.dataset.positioned = "true";
+}
+
+function applySavedAeroPosition(root: HTMLElement) {
+  const saved = getSavedAeroPosition();
+  if (saved) {
+    applyAeroPosition(root, saved, false);
+  }
 }
 
 async function saveAeroContext(context: AeroContext) {
@@ -437,6 +538,13 @@ function ensurePanel(context: AeroContext = detectPageContext()) {
   panel.querySelector('[data-action="expand"]')?.addEventListener("click", () => {
     const isExpanded = panel.getAttribute("data-expanded") === "true";
     panel.setAttribute("data-expanded", String(!isExpanded));
+    if (isExpanded) {
+      positionOpenPanel();
+    } else {
+      panel.style.left = "";
+      panel.style.top = "";
+      delete panel.dataset.positioned;
+    }
     const button = panel.querySelector<HTMLButtonElement>('[data-action="expand"]');
     button?.setAttribute("aria-label", isExpanded ? "Expand Aero assistant" : "Collapse Aero assistant");
     button?.setAttribute("title", isExpanded ? "Expand" : "Collapse");
@@ -454,6 +562,73 @@ async function togglePanel() {
   const panel = ensurePanel(context);
   const isOpen = panel.getAttribute("data-open") === "true";
   panel.setAttribute("data-open", String(!isOpen));
+  if (!isOpen) {
+    positionOpenPanel();
+  }
+}
+
+function enableAeroDrag(root: HTMLElement, button: HTMLButtonElement) {
+  let pointerId: number | undefined;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  let moved = false;
+
+  button.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+    const rect = root.getBoundingClientRect();
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    startLeft = rect.left;
+    startTop = rect.top;
+    moved = false;
+    root.dataset.dragging = "true";
+    button.setPointerCapture(event.pointerId);
+  });
+
+  button.addEventListener("pointermove", (event) => {
+    if (pointerId !== event.pointerId) {
+      return;
+    }
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (!moved && Math.hypot(dx, dy) < 4) {
+      return;
+    }
+    moved = true;
+    event.preventDefault();
+    applyAeroPosition(root, { x: startLeft + dx, y: startTop + dy }, false);
+  });
+
+  button.addEventListener("pointerup", (event) => {
+    if (pointerId !== event.pointerId) {
+      return;
+    }
+    pointerId = undefined;
+    delete root.dataset.dragging;
+    if (moved) {
+      event.preventDefault();
+      button.dataset.skipClick = "true";
+      applyAeroPosition(root, {
+        x: root.getBoundingClientRect().left,
+        y: root.getBoundingClientRect().top
+      });
+      window.setTimeout(() => {
+        delete button.dataset.skipClick;
+      }, 0);
+    }
+  });
+
+  button.addEventListener("pointercancel", (event) => {
+    if (pointerId === event.pointerId) {
+      pointerId = undefined;
+      delete root.dataset.dragging;
+    }
+  });
 }
 
 function buildAeroElement(context: AeroContext = {}) {
@@ -516,6 +691,9 @@ function buildAeroElement(context: AeroContext = {}) {
   `;
 
   button.addEventListener("click", () => {
+    if (button.dataset.skipClick === "true") {
+      return;
+    }
     console.log("Aero clicked", detectPageContext());
     void togglePanel();
   });
@@ -538,8 +716,27 @@ function mountAero(context?: AeroContext) {
     document.body.appendChild(root);
   }
 
-  if (!root.querySelector(".aero-companion")) {
-    root.appendChild(buildAeroElement(context));
+  let button = root.querySelector<HTMLButtonElement>(".aero-companion");
+  if (!button) {
+    button = buildAeroElement(context);
+    root.appendChild(button);
+    enableAeroDrag(root, button);
+  }
+  applySavedAeroPosition(root);
+
+  if (!resizeObserverStarted) {
+    resizeObserverStarted = true;
+    window.addEventListener("resize", () => {
+      const currentRoot = document.getElementById(AERO_ROOT_ID);
+      if (currentRoot?.dataset.positioned === "true") {
+        applyAeroPosition(currentRoot, {
+          x: currentRoot.getBoundingClientRect().left,
+          y: currentRoot.getBoundingClientRect().top
+        });
+      } else {
+        positionOpenPanel(currentRoot ?? undefined);
+      }
+    });
   }
 }
 

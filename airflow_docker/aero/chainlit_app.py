@@ -1,4 +1,4 @@
-"""Aero Chainlit app for Airflow DAG assistance."""
+"""Aero Chainlit app for Airflow page-context assistance."""
 
 from __future__ import annotations
 
@@ -45,9 +45,11 @@ def get_aero_context() -> dict:
     )
 
 
-def normalize_context(context: dict) -> dict[str, str | None]:
+def normalize_context(context: dict) -> dict[str, Any]:
     return {
         "page_type": context.get("pageType") or context.get("page_type"),
+        "page_title": context.get("pageTitle") or context.get("page_title"),
+        "route_parts": context.get("routeParts") or context.get("route_parts"),
         "dag_id": context.get("dagId") or context.get("dag_id"),
         "run_id": context.get("runId") or context.get("run_id"),
         "task_id": context.get("taskId") or context.get("task_id"),
@@ -365,9 +367,35 @@ def format_frontend_context(
     )
 
 
+def page_context_summary(
+    page_context: dict[str, Any],
+) -> str:
+    labels = {
+        "page_type": "Page type",
+        "page_title": "Page title",
+        "path": "Path",
+        "source_url": "URL",
+        "dag_id": "DAG",
+        "run_id": "Run",
+        "task_id": "Task",
+    }
+
+    lines = [
+        f"- {label}: `{value}`"
+        for key, label in labels.items()
+        if (value := page_context.get(key))
+    ]
+
+    route_parts = page_context.get("route_parts")
+    if route_parts:
+        lines.append(f"- Route parts: `{json.dumps(route_parts)}`")
+
+    return "\n".join(lines) or "- No frontend page context received yet."
+
+
 def build_mock_answer(
     question: str,
-    page_context: dict[str, str | None],
+    page_context: dict[str, Any],
     dag_id: str | None,
     dag_metadata: dict[str, Any],
     dag_path: Path | None,
@@ -380,12 +408,14 @@ def build_mock_answer(
         f"{format_frontend_context(page_context)}\n"
         "```"
     )
+    page_body = (
+        "Mock page-context response:\n"
+        f"{page_context_summary(page_context)}"
+    )
 
     if not dag_id:
         return (
-            "Mock response: I do not have a DAG in the current "
-            "frontend context yet. Open a DAG, task, run, graph, "
-            "or grid page and I will reflect that context here.\n\n"
+            f"{page_body}\n\n"
             f"{context_block}"
         )
 
@@ -431,6 +461,7 @@ def build_mock_answer(
         )
 
     return (
+        f"{page_body}\n\n"
         f"{mock_body}\n\n"
         f"{context_block}"
     )
@@ -442,7 +473,7 @@ def build_mock_answer(
 
 
 def get_current_dag_details() -> tuple[
-    dict[str, str | None],
+    dict[str, Any],
     str | None,
     dict[str, Any],
     Path | None,
@@ -525,6 +556,8 @@ def context_title() -> str:
 
     dag_id = page_context.get("dag_id")
     task_id = page_context.get("task_id")
+    page_type = page_context.get("page_type")
+    path = page_context.get("path")
 
     if dag_id and task_id:
         return (
@@ -534,13 +567,27 @@ def context_title() -> str:
     if dag_id:
         return f"`{dag_id}`"
 
-    return (
-        "Open a DAG page and I will adapt."
-    )
+    if page_type:
+        return f"`{page_type}`"
+
+    if path:
+        return f"`{path}`"
+
+    return "Open an Airflow page and I will adapt."
 
 
 def quick_actions() -> list[cl.Action]:
     return [
+        cl.Action(
+            name="aero_show_context",
+            label="Show Context",
+            payload={
+                "question": (
+                    "Show me the current Airflow page context."
+                )
+            },
+            icon="panel-top",
+        ),
         cl.Action(
             name="aero_explain_dag",
             label="Explain DAG",
@@ -706,6 +753,7 @@ async def on_message(
 @cl.action_callback("aero_task_flow")
 @cl.action_callback("aero_schedule")
 @cl.action_callback("aero_risks")
+@cl.action_callback("aero_show_context")
 async def on_action(
     action: cl.Action,
 ) -> None:
