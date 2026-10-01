@@ -46,7 +46,7 @@ class AeroPlugin(AirflowPlugin):
     react_apps = [
         {
             "name": "Aero",
-            "bundle_url": "/aero/static/aero.js?v=20261001-skyblue-aero",
+            "bundle_url": "/aero/static/aero.js?v=20261001-airflow-mark",
             "destination": "base",
             "url_route": "aero",
         }

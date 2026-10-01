@@ -1,34 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
-    <radialGradient id="body" cx="38%" cy="25%" r="72%">
+    <radialGradient id="hub" cx="38%" cy="28%" r="70%">
       <stop stop-color="#FFFFFF"/>
-      <stop offset="0.55" stop-color="#F3FBFF"/>
-      <stop offset="1" stop-color="#9BDEFF"/>
+      <stop offset="0.62" stop-color="#F8FBFF"/>
+      <stop offset="1" stop-color="#DBEAFE"/>
     </radialGradient>
-    <linearGradient id="wing" x1="18" x2="112" y1="104" y2="24" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#BAE6FD"/>
-      <stop offset="0.48" stop-color="#60A5FA"/>
-      <stop offset="1" stop-color="#E0F7FF"/>
+    <linearGradient id="blue" x1="28" x2="64" y1="28" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00C7D4"/>
+      <stop offset="1" stop-color="#017CEE"/>
+    </linearGradient>
+    <linearGradient id="green" x1="64" x2="100" y1="28" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00D084"/>
+      <stop offset="1" stop-color="#20A53A"/>
+    </linearGradient>
+    <linearGradient id="red" x1="100" x2="64" y1="100" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF7043"/>
+      <stop offset="1" stop-color="#E43936"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="28" x2="64" y1="100" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD166"/>
+      <stop offset="1" stop-color="#F39C12"/>
     </linearGradient>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
-      <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0284C7" flood-opacity="0.24"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.28"/>
     </filter>
   </defs>
   <rect width="128" height="128" rx="30" fill="#0F2D5C"/>
-  <circle cx="103" cy="25" r="18" fill="#1E40AF" opacity="0.18"/>
-  <path d="M37 53C26 46 22 34 24 23c12 5 21 15 24 28z" fill="url(#wing)" stroke="#7DD3FC" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M88 57c13-7 22-6 29-1-7 11-18 17-30 16z" fill="url(#wing)" stroke="#7DD3FC" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="104" cy="24" r="18" fill="#017CEE" opacity="0.18"/>
   <g filter="url(#shadow)">
-    <path d="M39 92c-16 0-28-10-28-23 0-12 9-21 23-23 5-15 18-25 34-25 19 0 34 14 37 32 8 4 13 11 13 19 0 12-12 22-28 22H39Z" fill="url(#body)" stroke="#60A5FA" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M65 29c11-16 32 0 16 17-7 7-16 5-18-2 6 2 15-1 14-8-1-6-7-8-12-7z" fill="#ECFAFF" stroke="#93C5FD" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="51" cy="65" r="7" fill="#0F2D5C"/>
-    <circle cx="78" cy="65" r="7" fill="#0F2D5C"/>
-    <circle cx="48.5" cy="61.5" r="2.2" fill="#FFFFFF"/>
-    <circle cx="75.5" cy="61.5" r="2.2" fill="#FFFFFF"/>
-    <circle cx="36" cy="74" r="4.8" fill="#FDA4AF" opacity="0.8"/>
-    <circle cx="93" cy="74" r="4.8" fill="#FDA4AF" opacity="0.8"/>
-    <path d="M59 78c4 5 10 5 14 0" fill="none" stroke="#0F2D5C" stroke-width="4" stroke-linecap="round"/>
+    <path d="M57 52 31 26c11-8 27-7 38 3l9 9z" fill="url(#blue)" stroke="#0F6FDE" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M76 57 102 31c8 11 7 27-3 38l-9 9z" fill="url(#green)" stroke="#168C35" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M71 76 97 102c-11 8-27 7-38-3l-9-9z" fill="url(#red)" stroke="#C8322F" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M52 71 26 97c-8-11-7-27 3-38l9-9z" fill="url(#gold)" stroke="#D8890F" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="31" cy="26" r="7" fill="#00C7D4" stroke="#FFFFFF" stroke-width="3"/>
+    <circle cx="102" cy="31" r="7" fill="#00D084" stroke="#FFFFFF" stroke-width="3"/>
+    <circle cx="97" cy="102" r="7" fill="#FF7043" stroke="#FFFFFF" stroke-width="3"/>
+    <circle cx="26" cy="97" r="7" fill="#FFD166" stroke="#FFFFFF" stroke-width="3"/>
+    <circle cx="64" cy="64" r="25" fill="url(#hub)" stroke="#0F2D5C" stroke-width="4"/>
+    <circle cx="55" cy="61" r="5.6" fill="#0F2D5C"/>
+    <circle cx="73" cy="61" r="5.6" fill="#0F2D5C"/>
+    <circle cx="53.3" cy="58.6" r="1.8" fill="#FFFFFF"/>
+    <circle cx="71.3" cy="58.6" r="1.8" fill="#FFFFFF"/>
+    <path d="M58 72c3.5 4 8.5 4 12 0" fill="none" stroke="#0F2D5C" stroke-width="3.2" stroke-linecap="round"/>
   </g>
-  <path d="M101 89c17-2 26-12 20-21-4-7-14-4-16 4" fill="none" stroke="#38BDF8" stroke-width="7" stroke-linecap="round" opacity="0.75"/>
-  <path d="M109 31l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#BAE6FD"/>
 </svg>

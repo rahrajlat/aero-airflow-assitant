@@ -4,7 +4,7 @@
 
 # Aero for Apache Airflow
 
-### Bring AI-assisted DAG understanding directly into the Airflow UI.
+### Bring your own agent chat experience directly into the Airflow UI.
 
 [![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.x-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -18,112 +18,57 @@
 
 </div>
 
-Aero is a local Apache Airflow 3 assistant layer built with Chainlit and FastAPI. It brings DAG-aware AI support into the Airflow environment so you can inspect DAG metadata, review source code, and ask contextual questions about a DAG without leaving the Airflow UI experience.
+Aero is a local Apache Airflow 3 pattern for embedding an agent chat interface inside the Airflow experience without rebuilding the Airflow frontend from scratch. It uses an Airflow plugin, FastAPI, and Chainlit to mount a chat surface in Airflow, then lets you wire in your own LLM provider, agent framework, tools, and runtime logic behind it.
 
-> Note: This is an idea that can be adapted to any LLM provider. For the local demo, it is configured to run with Ollama, but the design is intentionally modular so the same pattern can work with other model backends.
+> Note: This repo includes a working DAG-aware assistant demo, but the main idea is broader: use Airflow as the operational surface, bring your own agent or agentic framework, and pass Airflow context into that agent so it can reason over the page, DAG, task, run, logs, or metadata the user is already looking at.
 
 Right now, this project does three main things:
 
 - runs a local Airflow 3 stack with PostgreSQL, Redis, and Celery workers
-- mounts a custom Aero plugin into the Airflow UI so the assistant can read the current page context and DAG metadata
-- exposes a Chainlit chat app that can inspect DAG source files and answer questions about the current DAG/task context
+- mounts a custom Aero plugin into the Airflow UI so a chat application can read the current page context and DAG metadata
+- exposes a Chainlit chat app that can call an agent runtime and answer questions about the current DAG/task context
 
 This repository packages the full local development stack: Airflow, PostgreSQL, Redis, Celery workers, a custom Aero plugin, and a demo DAG for experimentation.
 
+## Demo
+
+![Aero demo screenshot 1](docs/demo1.png)
+
+![Aero demo screenshot 2](docs/demo2.png)
+
 ## How it works
 
-Aero is built around a simple pattern: when an Airflow page loads, the frontend captures the current page context and sends it to the backend. That context includes information such as the page type, DAG id, task id, run id, path, and source URL.
+Aero is built around a simple integration pattern:
 
-The backend stores that context and the Chainlit app reads it back when the user asks a question. The model then sees the current Airflow context together with the relevant DAG metadata and source code, so answers are grounded in the page the user is looking at rather than generic Airflow knowledge.
+1. Airflow remains the primary frontend and operational workspace.
+2. An Airflow plugin mounts a FastAPI application and a Chainlit chat UI under the Airflow web app.
+3. Browser-side code captures the current Airflow page context and sends it to the backend.
+4. The chat runtime reads that context and passes it to your agent, tools, or agentic framework.
+5. The agent answers with access to real Airflow metadata, source files, and page context instead of relying only on generic model knowledge.
 
-At the moment, this is focused on DAG pages and related DAG/task context. The design is intentionally extensible: the same pattern can be used for task pages, run pages, logs, or any future Airflow surface that exposes useful metadata. In other words, the idea is not just “AI for DAGs,” but “AI context-aware assistant for the Airflow UI.”
+When an Airflow page loads, the frontend captures information such as the page type, DAG id, task id, run id, path, and source URL. The backend stores that context, and the Chainlit app reads it back when the user asks a question. The included demo agent then combines the current Airflow context with DAG metadata and source code.
 
-## What are Chainlit and Strands?
+At the moment, this is focused on DAG pages and related DAG/task context. The design is intentionally extensible: the same pattern can be used for task pages, run pages, logs, dataset events, deployment controls, or any future Airflow surface that exposes useful metadata. In other words, the idea is not only "AI for DAGs"; it is a reusable pattern for context-aware agent chat inside Airflow.
+
+## Bring your own agent
+
+Aero does not require you to adopt one specific agent architecture. Chainlit provides the chat interface, Airflow provides the host UI and operational context, and the backend boundary is where you can plug in the agent stack you already use.
+
+You can adapt this pattern to:
+
+- Strands, LangGraph, CrewAI, LlamaIndex, Semantic Kernel, custom Python agents, or any other agentic framework
+- local models through Ollama, remote APIs, Bedrock, OpenAI-compatible endpoints, or provider-specific SDKs
+- read-only assistants that explain DAGs, task runs, schedules, and logs
+- action-oriented agents that open tickets, trigger remediation workflows, generate runbooks, or call internal platform APIs
+- organization-specific tools that query lineage systems, data catalogs, observability platforms, incident systems, or deployment metadata
+
+The important contract is simple: Airflow page context goes in, your agent/tool runtime decides what to do, and Chainlit streams the conversation back inside the Airflow experience.
+
 
 ### Chainlit
 
-[Chainlit](https://github.com/Chainlit/chainlit) is a lightweight framework for building chat-based AI applications with Python. It eases the creation of a frontend by providing a Pythonic way to add chat interfaces, so developers can focus on the assistant logic instead of building the conversational UI from scratch. Chainlit can also be mounted as a FastAPI application, and Airflow 3 natively supports FastAPI apps through its plugin architecture. In this project, that makes it possible to serve the browser-based Aero chat experience directly from the Airflow environment.
+[Chainlit](https://github.com/Chainlit/chainlit) is a lightweight framework for building chat-based AI applications with Python. It provides the chat frontend so developers can focus on agent logic instead of recreating a conversational UI from scratch. Chainlit can also be mounted as a FastAPI application, and Airflow 3 supports FastAPI apps through its plugin architecture. In this project, that makes it possible to serve the browser-based Aero chat experience directly from the Airflow environment.
 
-### Strands
-
-[Strands](https://strandsagents.com/) is a framework for building tool-using AI agents. It helps connect an LLM to structured tools so the model can act on real data sources instead of only answering from general knowledge. In Aero, that means the assistant can inspect Airflow metadata, read DAG source files, and summarize task flows and risks using real project context.
-
-Together, they give Aero a simple but powerful pattern: a chat UI from Chainlit and tool-calling agent behavior from Strands, grounded in Airflow metadata and source code.
-
-## Current tools in Aero
-
-The agent currently exposes these tools to the LLM:
-
-- `get_airflow_dag_metadata(dag_id)`: returns the DAG metadata, task definitions, operators, and dependency graph
-- `get_airflow_dag_source(dag_id)`: returns the Python source code for the selected DAG
-- `summarize_airflow_task_flow(dag_id)`: produces a concise task-by-task dependency summary
-- `summarize_airflow_schedule(dag_id)`: explains the DAG schedule, catchup behavior, tags, and run settings
-- `scan_airflow_dag_risks(dag_id)`: runs a lightweight risk scan for missing description, missing schedule, retry gaps, and obvious DAG patterns
-
-These tools are the current building blocks behind Aero's DAG-aware answers in the local Airflow experience.
-
-## Demo
-
-[![Aero demo](https://img.youtube.com/vi/8SOVYaV-yZE/maxresdefault.jpg)](https://youtu.be/8SOVYaV-yZE)
-
-[▶ Watch the demo on YouTube](https://youtu.be/8SOVYaV-yZE)
-
-## Table of Contents
-
-- [Features](#features)
-- [Plugin Layout](#plugin-layout)
-- [Local Development With This Repo](#local-development-with-this-repo)
-- [Demo DAG](#demo-dag)
-- [Access Points](#access-points)
-- [Configuration](#configuration)
-- [API and Integration Points](#api-and-integration-points)
-- [Development Notes](#development-notes)
-- [Requirements](#requirements)
-- [License](#license)
-
-## Features
-
-- Built as an Airflow plugin with a mounted FastAPI app
-- Exposes a Chainlit-powered assistant experience under the Airflow web app
-- Reads DAG metadata and source files for contextual explanation
-- Stores browser page context so the assistant understands the current DAG/task/page
-- Works with local Ollama-based LLMs or other compatible model providers
-- Includes a randomized demo DAG to exercise long-running and varied task timings
-- Keeps a local Docker Compose environment for quick iteration and experimentation
-
-## Plugin Layout
-
-The custom plugin lives in:
-
-```text
-airflow_docker/plugins/aero/
-  __init__.py
-  aero_chainlit.py
-  aero_context.py
-  aero_plugin.py
-  aero-chainlit.css
-  aero-chainlit.js
-  aero.js
-```
-
-`aero_plugin.py` registers:
-
-- a FastAPI app at `/aero`
-- static assets served from the plugin directory
-- a Chainlit app mounted under `/aero/chainlit`
-- a React/Aero UI bundle exposed as an Airflow plugin app
-
-The Chainlit logic is configured from:
-
-```text
-airflow_docker/config/aero_chainlit.py
-```
-
-The frontend source is under:
-
-```text
-airflow_docker/widgets/aero-ui/
-```
 
 ## Local Development With This Repo
 
@@ -203,7 +148,7 @@ Important defaults include:
 - `AIRFLOW__CORE__LOAD_EXAMPLES=false`
 - `AERO_LLM_PROVIDER=${AERO_LLM_PROVIDER:-ollama}`
 - `AERO_OLLAMA_HOST=${AERO_OLLAMA_HOST:-http://host.docker.internal:11434}`
-- `AERO_OLLAMA_MODEL=${AERO_OLLAMA_MODEL:-qwen2.5:3b}`
+- `AERO_OLLAMA_MODEL=${AERO_OLLAMA_MODEL:-llama3.1:latest}`
 
 The configuration mounts local directories so the config, DAGs, logs, and plugin files are editable without rebuilding the entire environment.
 
@@ -223,41 +168,10 @@ In practice, the assistant can inspect:
 - task and run context from the current Airflow page
 - DAG source files from the mounted `dags` directory
 
-## Strands and Tool Calling
-
-Aero uses a tool-enabled agent pattern so the LLM is not just answering from a static prompt. Instead, the assistant is wired to a small set of Airflow-specific tools defined in `airflow_docker/config/aero_chainlit.py`.
-
-The current tool set includes:
-
-- `get_airflow_dag_metadata(dag_id)`
-  - returns the DAG definition, tags, schedule, task list, upstream/downstream dependencies, and retry metadata
-- `get_airflow_dag_source(dag_id)`
-  - reads the DAG Python source file and returns the relevant code with truncation for large files
-- `summarize_airflow_task_flow(dag_id)`
-  - prints a concise dependency map for the DAG
-- `summarize_airflow_schedule(dag_id)`
-  - summarizes schedule, catchup behavior, tags, and run settings
-- `scan_airflow_dag_risks(dag_id)`
-  - performs a lightweight static-risk scan for missing descriptions, empty schedules, missing retries, and common operational concerns
-
-These tools are registered in `AIRFLOW_TOOLS` and passed into the model agent. The runtime checks the configured provider from `AERO_LLM_PROVIDER`:
-
-- if the provider is `ollama`, it uses the Ollama chat endpoint and streams tokens back into the Chainlit UI
-- otherwise, it falls back to the Strands agent path, which can use a provider-specific model backend such as Bedrock or another supported Strands configuration
-
-In other words, the assistant can answer questions like:
-
-- “What does this DAG do?”
-- “Show me the task flow and dependencies.”
-- “Summarize the schedule and run settings.”
-- “Are there any obvious risks in this DAG?”
-
-using real Airflow metadata and DAG source rather than relying only on generic model knowledge.
-
 ## Development Notes
 
 - This is a local development environment, not a production deployment.
-- The custom Aero layer is designed to be easily extended with more DAG analysis tools or richer LLM workflows.
+- The custom Aero layer is designed to be extended with more DAG analysis tools, richer LLM workflows, or a completely different agentic framework.
 - The project uses Docker Compose for a reproducible local Airflow environment.
 - FastAPI and Chainlit are mounted into the Airflow plugin runtime rather than running as separate services.
 

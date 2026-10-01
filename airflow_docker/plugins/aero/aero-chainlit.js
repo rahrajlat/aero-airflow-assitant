@@ -1,5 +1,5 @@
 (() => {
-  const href = "/aero/static/aero-favicon.svg?v=20261001-winged";
+  const href = "/aero/static/aero-favicon.svg?v=20261001-airflow-mark";
   const setIcon = () => {
     const existing = document.querySelector("link[rel='icon']");
     const icon = existing || document.createElement("link");

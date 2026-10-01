@@ -50,11 +50,11 @@ function ensureStyles() {
     }
     #aero-chainlit-panel {
       all: initial;
-      background: #ffffff;
-      border: 1px solid rgba(15, 23, 42, 0.18);
+      background: #121a2b;
+      border: 1px solid #4b5f7a;
       border-radius: 8px;
       bottom: max(104px, calc(env(safe-area-inset-bottom) + 104px));
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.26);
+      box-shadow: 0 24px 60px rgba(2, 8, 23, 0.38);
       display: none;
       height: min(680px, calc(100vh - 132px));
       overflow: hidden;
@@ -64,13 +64,72 @@ function ensureStyles() {
       z-index: 2147482999;
     }
     #aero-chainlit-panel[data-open="true"] {
-      display: block;
+      display: flex;
+      flex-direction: column;
+    }
+    #aero-chainlit-panel[data-expanded="true"] {
+      bottom: max(18px, env(safe-area-inset-bottom));
+      height: calc(100vh - max(36px, calc(env(safe-area-inset-bottom) + env(safe-area-inset-top) + 36px)));
+      right: max(18px, env(safe-area-inset-right));
+      width: min(920px, calc(100vw - 36px));
     }
     #aero-chainlit-panel iframe {
       border: 0;
       display: block;
-      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
       width: 100%;
+    }
+    .aero-panel-toolbar {
+      align-items: center;
+      background: #121a2b;
+      border-bottom: 1px solid #2d3d56;
+      color: #dbe4ef;
+      display: flex;
+      flex: 0 0 auto;
+      font: 600 13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      gap: 8px;
+      justify-content: space-between;
+      min-height: 40px;
+      padding: 6px 8px 6px 12px;
+    }
+    .aero-panel-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .aero-panel-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .aero-panel-action {
+      align-items: center;
+      appearance: none;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #f8fafc;
+      cursor: pointer;
+      display: inline-flex;
+      height: 28px;
+      justify-content: center;
+      padding: 0;
+      width: 28px;
+    }
+    .aero-panel-action:hover, .aero-panel-action:focus-visible {
+      background: rgba(77, 183, 255, 0.15);
+      border-color: rgba(143, 209, 255, 0.55);
+      outline: none;
+    }
+    .aero-panel-action svg {
+      display: block;
+      height: 16px;
+      pointer-events: none;
+      width: 16px;
+    }
+    #aero-chainlit-panel[data-expanded="true"] .aero-panel-action[data-action="expand"] .aero-icon-expand,
+    #aero-chainlit-panel:not([data-expanded="true"]) .aero-panel-action[data-action="expand"] .aero-icon-collapse {
+      display: none;
     }
     .aero-companion {
       all: unset;
@@ -109,24 +168,20 @@ function ensureStyles() {
       transform-box: fill-box;
       transform-origin: center;
     }
-    .aero-companion__wing {
-      animation: aero-wing 1.45s ease-in-out infinite;
+    .aero-companion__blade {
+      animation: aero-blade 3.6s ease-in-out infinite;
       transform-box: fill-box;
-      transform-origin: center center;
+      transform-origin: 64px 64px;
     }
-    .aero-companion__wing--right {
-      animation-delay: 110ms;
-    }
-    .aero-companion__curl {
-      animation: aero-curl 2.4s ease-in-out infinite;
+    .aero-companion__hub {
+      animation: aero-hub-pulse 2.9s ease-in-out infinite;
       transform-box: fill-box;
-      transform-origin: 50% 70%;
+      transform-origin: center;
     }
-    .aero-companion__wisp {
-      animation: aero-wisp 2.8s ease-in-out infinite;
-    }
-    .aero-companion__wisp--late {
-      animation-delay: 650ms;
+    .aero-companion__node {
+      animation: aero-node-pulse 2.6s ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
     }
     .aero-companion__sparkle {
       animation: aero-sparkle 2.6s ease-in-out infinite;
@@ -148,17 +203,17 @@ function ensureStyles() {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.025); }
     }
-    @keyframes aero-wing {
-      0%, 100% { transform: rotate(0deg) translateY(0); }
-      50% { transform: rotate(-8deg) translateY(-2px); }
+    @keyframes aero-blade {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(3deg) scale(1.025); }
     }
-    @keyframes aero-curl {
-      0%, 100% { transform: rotate(0deg) translateY(0); }
-      50% { transform: rotate(7deg) translateY(-1px); }
+    @keyframes aero-hub-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
-    @keyframes aero-wisp {
-      0%, 100% { opacity: 0.5; transform: translateX(0) scale(1); }
-      50% { opacity: 0.95; transform: translateX(3px) scale(1.04); }
+    @keyframes aero-node-pulse {
+      0%, 100% { opacity: 0.85; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.12); }
     }
     @keyframes aero-sparkle {
       0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
@@ -170,6 +225,13 @@ function ensureStyles() {
         height: min(640px, calc(100vh - 108px));
         right: max(10px, env(safe-area-inset-right));
         width: calc(100vw - 20px);
+      }
+      #aero-chainlit-panel[data-expanded="true"] {
+        border-radius: 0;
+        bottom: 0;
+        height: 100vh;
+        right: 0;
+        width: 100vw;
       }
       #aero-companion-root {
         bottom: max(14px, env(safe-area-inset-bottom));
@@ -183,7 +245,7 @@ function ensureStyles() {
       }
     }
     @media (prefers-reduced-motion: reduce) {
-      .aero-companion, .aero-companion__body, .aero-companion__eye, .aero-companion__wing, .aero-companion__curl, .aero-companion__wisp, .aero-companion__sparkle {
+      .aero-companion, .aero-companion__body, .aero-companion__eye, .aero-companion__blade, .aero-companion__hub, .aero-companion__node, .aero-companion__sparkle {
         animation: none;
       }
     }
@@ -350,7 +412,38 @@ function ensurePanel(context: AeroContext = detectPageContext()) {
   panel = document.createElement("div");
   panel.id = AERO_PANEL_ID;
   panel.setAttribute("data-open", "false");
-  panel.innerHTML = `<iframe title="Aero assistant" src="${buildChainlitUrl(context)}"></iframe>`;
+  panel.setAttribute("data-expanded", "false");
+  panel.innerHTML = `
+    <div class="aero-panel-toolbar">
+      <span class="aero-panel-title">Aero assistant</span>
+      <div class="aero-panel-actions">
+        <button class="aero-panel-action" type="button" data-action="expand" aria-label="Expand Aero assistant" title="Expand">
+          <svg class="aero-icon-expand" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg class="aero-icon-collapse" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 3v5H3M16 3v5h5M8 21v-5H3M21 16h-5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="aero-panel-action" type="button" data-action="minimize" aria-label="Minimize Aero assistant" title="Minimize">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <iframe title="Aero assistant" src="${buildChainlitUrl(context)}"></iframe>
+  `;
+  panel.querySelector('[data-action="expand"]')?.addEventListener("click", () => {
+    const isExpanded = panel.getAttribute("data-expanded") === "true";
+    panel.setAttribute("data-expanded", String(!isExpanded));
+    const button = panel.querySelector<HTMLButtonElement>('[data-action="expand"]');
+    button?.setAttribute("aria-label", isExpanded ? "Expand Aero assistant" : "Collapse Aero assistant");
+    button?.setAttribute("title", isExpanded ? "Expand" : "Collapse");
+  });
+  panel.querySelector('[data-action="minimize"]')?.addEventListener("click", () => {
+    panel.setAttribute("data-open", "false");
+  });
   document.body.appendChild(panel);
   return panel;
 }
@@ -373,43 +466,52 @@ function buildAeroElement(context: AeroContext = {}) {
   button.innerHTML = `
     <svg class="aero-companion__svg" viewBox="0 0 128 128" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="aero-body-glow" cx="38%" cy="26%" r="72%">
+        <radialGradient id="aero-hub-glow" cx="38%" cy="28%" r="70%">
           <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="52%" stop-color="#f4fbff"/>
-          <stop offset="100%" stop-color="#9bdcff"/>
-        </radialGradient>
-        <linearGradient id="aero-sky-wing" x1="20" x2="106" y1="100" y2="26">
-          <stop offset="0%" stop-color="#7dd3fc"/>
-          <stop offset="54%" stop-color="#60a5fa"/>
-          <stop offset="100%" stop-color="#dff6ff"/>
+          <stop offset="62%" stop-color="#f8fbff"/>
+          <stop offset="100%" stop-color="#dbeafe"/>
         </linearGradient>
-        <linearGradient id="aero-tail" x1="82" x2="126" y1="92" y2="54">
-          <stop offset="0%" stop-color="#bfecff" stop-opacity="0.28"/>
-          <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.82"/>
+        <linearGradient id="aero-blue-blade" x1="28" x2="64" y1="28" y2="64">
+          <stop offset="0%" stop-color="#00c7d4"/>
+          <stop offset="100%" stop-color="#017cee"/>
+        </linearGradient>
+        <linearGradient id="aero-green-blade" x1="64" x2="100" y1="28" y2="64">
+          <stop offset="0%" stop-color="#00d084"/>
+          <stop offset="100%" stop-color="#20a53a"/>
+        </linearGradient>
+        <linearGradient id="aero-red-blade" x1="100" x2="64" y1="100" y2="64">
+          <stop offset="0%" stop-color="#ff7043"/>
+          <stop offset="100%" stop-color="#e43936"/>
+        </linearGradient>
+        <linearGradient id="aero-gold-blade" x1="28" x2="64" y1="100" y2="64">
+          <stop offset="0%" stop-color="#ffd166"/>
+          <stop offset="100%" stop-color="#f39c12"/>
         </linearGradient>
         <filter id="aero-soft-shadow" x="-30%" y="-30%" width="160%" height="170%">
-          <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0284c7" flood-opacity="0.22"/>
+          <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.24"/>
         </filter>
       </defs>
-      <ellipse cx="63" cy="111" rx="30" ry="6" fill="#38bdf8" opacity="0.16"/>
-      <path class="aero-companion__wisp" d="M100 88c19-2 29-13 22-23-5-8-16-4-18 4" fill="none" stroke="url(#aero-tail)" stroke-width="7" stroke-linecap="round"/>
-      <path class="aero-companion__wisp aero-companion__wisp--late" d="M20 79c-10 2-16-3-15-9 1-8 12-12 22-8" fill="none" stroke="#7dd3fc" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
-      <path class="aero-companion__wing" d="M40 48C26 39 21 25 22 13c14 6 24 18 26 34z" fill="url(#aero-sky-wing)" stroke="#60a5fa" stroke-width="2.6" stroke-linejoin="round"/>
-      <path class="aero-companion__wing aero-companion__wing--right" d="M90 54c15-8 25-7 32-1-8 13-20 20-34 18z" fill="url(#aero-sky-wing)" stroke="#60a5fa" stroke-width="2.6" stroke-linejoin="round"/>
+      <ellipse cx="64" cy="111" rx="31" ry="6" fill="#017cee" opacity="0.15"/>
       <g class="aero-companion__body" filter="url(#aero-soft-shadow)">
-        <path d="M40 91c-16 0-29-10-29-24 0-12 10-22 24-24 5-15 18-25 35-25 20 0 35 14 38 33 8 4 13 11 13 20 0 13-12 23-29 23H40z" fill="url(#aero-body-glow)" stroke="#60a5fa" stroke-width="3.4" stroke-linejoin="round"/>
-        <path d="M47 88c11 9 34 9 48 0-6 12-16 18-29 18-10 0-17-6-19-18z" fill="#7dd3fc" opacity="0.34"/>
-        <path class="aero-companion__curl" d="M65 26c12-17 36 0 18 19-7 7-17 5-19-3 7 3 17-1 16-9-1-6-9-9-15-7z" fill="#e8f8ff" stroke="#93c5fd" stroke-width="2.5" stroke-linejoin="round"/>
-        <circle class="aero-companion__eye" cx="51" cy="64" r="7.2" fill="#0f2d5c"/>
-        <circle class="aero-companion__eye" cx="79" cy="64" r="7.2" fill="#0f2d5c"/>
-        <circle cx="48.5" cy="60.5" r="2.2" fill="#ffffff"/>
-        <circle cx="76.5" cy="60.5" r="2.2" fill="#ffffff"/>
-        <circle cx="36" cy="73" r="4.6" fill="#fda4af" opacity="0.76"/>
-        <circle cx="94" cy="73" r="4.6" fill="#fda4af" opacity="0.76"/>
-        <path d="M60 76c4 5 10 5 14 0" fill="none" stroke="#0f2d5c" stroke-width="3.4" stroke-linecap="round"/>
+        <g class="aero-companion__blade">
+          <path d="M57 52 31 26c11-8 27-7 38 3l9 9z" fill="url(#aero-blue-blade)" stroke="#0f6fde" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M76 57 102 31c8 11 7 27-3 38l-9 9z" fill="url(#aero-green-blade)" stroke="#168c35" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M71 76 97 102c-11 8-27 7-38-3l-9-9z" fill="url(#aero-red-blade)" stroke="#c8322f" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M52 71 26 97c-8-11-7-27 3-38l9-9z" fill="url(#aero-gold-blade)" stroke="#d8890f" stroke-width="2.5" stroke-linejoin="round"/>
+        </g>
+        <circle class="aero-companion__node" cx="31" cy="26" r="7" fill="#00c7d4" stroke="#ffffff" stroke-width="3"/>
+        <circle class="aero-companion__node" cx="102" cy="31" r="7" fill="#00d084" stroke="#ffffff" stroke-width="3"/>
+        <circle class="aero-companion__node" cx="97" cy="102" r="7" fill="#ff7043" stroke="#ffffff" stroke-width="3"/>
+        <circle class="aero-companion__node" cx="26" cy="97" r="7" fill="#ffd166" stroke="#ffffff" stroke-width="3"/>
+        <circle class="aero-companion__hub" cx="64" cy="64" r="25" fill="url(#aero-hub-glow)" stroke="#0f2d5c" stroke-width="3.4"/>
+        <circle class="aero-companion__eye" cx="55" cy="61" r="5.6" fill="#0f2d5c"/>
+        <circle class="aero-companion__eye" cx="73" cy="61" r="5.6" fill="#0f2d5c"/>
+        <circle cx="53.3" cy="58.6" r="1.8" fill="#ffffff"/>
+        <circle cx="71.3" cy="58.6" r="1.8" fill="#ffffff"/>
+        <path d="M58 72c3.5 4 8.5 4 12 0" fill="none" stroke="#0f2d5c" stroke-width="3.2" stroke-linecap="round"/>
       </g>
-      <path class="aero-companion__sparkle" d="M112 26l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#7dd3fc"/>
-      <path class="aero-companion__sparkle aero-companion__sparkle--late" d="M25 31l1.5 3.5L30 36l-3.5 1.5L25 41l-1.5-3.5L20 36l3.5-1.5z" fill="#bae6fd"/>
+      <path class="aero-companion__sparkle" d="M113 19l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#00c7d4"/>
+      <path class="aero-companion__sparkle aero-companion__sparkle--late" d="M17 39l1.5 3.5L22 44l-3.5 1.5L17 49l-1.5-3.5L12 44l3.5-1.5z" fill="#ffd166"/>
     </svg>
   `;
 

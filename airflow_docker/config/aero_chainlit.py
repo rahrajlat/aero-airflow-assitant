@@ -8,44 +8,15 @@ import os
 from http.cookies import SimpleCookie
 from pathlib import Path
 from typing import Any, AsyncIterator
-from urllib import request
 
 import chainlit as cl
 
 from aero_context import get_aero_context as get_stored_aero_context
 
 
-try:
-    from strands import tool as strands_tool
-except ImportError:
-    strands_tool = None
-
-
 DAGS_FOLDER = Path(
     os.getenv("AIRFLOW__CORE__DAGS_FOLDER", "/opt/airflow/dags")
 )
-
-DEFAULT_OLLAMA_HOST = os.getenv(
-    "AERO_OLLAMA_HOST",
-    "http://host.docker.internal:11434",
-)
-
-DEFAULT_OLLAMA_MODEL = os.getenv(
-    "AERO_OLLAMA_MODEL",
-    "llama3.1",
-)
-
-
-# ---------------------------------------------------------------------------
-# Tool decorator
-# ---------------------------------------------------------------------------
-
-
-def aero_tool(func):
-    if strands_tool is None:
-        return func
-
-    return strands_tool(func)
 
 
 # ---------------------------------------------------------------------------
@@ -173,11 +144,11 @@ def get_dag_source(
 
 
 # ---------------------------------------------------------------------------
-# Fallback response
+# Mock response helpers
 # ---------------------------------------------------------------------------
 
 
-def fallback_dag_explanation(
+def mock_dag_explanation(
     dag_id: str,
     dag_metadata: dict[str, Any],
     dag_path: Path | None,
@@ -211,25 +182,20 @@ def fallback_dag_explanation(
     ) or "- No tasks found from Airflow metadata."
 
     return (
-        f"I found DAG `{dag_id}` in `{location}`.\n\n"
-        "I could not reach a configured LLM, so here is a "
-        "lightweight Airflow metadata summary.\n\n"
+        f"Mock response: I found DAG `{dag_id}` in `{location}`.\n\n"
         f"Description: {description}\n\n"
         f"Tags: {tags}\n\n"
         f"Schedule: {schedule}\n\n"
         "Tasks and dependencies:\n"
-        f"{task_details}\n\n"
-        "Ask again once Ollama or Bedrock is available and "
-        "I can produce a fuller natural-language explanation."
+        f"{task_details}"
     )
 
 
 # ---------------------------------------------------------------------------
-# Airflow tools
+# Airflow metadata helpers
 # ---------------------------------------------------------------------------
 
 
-@aero_tool
 def get_airflow_dag_metadata(dag_id: str) -> str:
     """Return read-only Airflow DAG metadata, tasks, operators,
     and dependencies."""
@@ -241,7 +207,6 @@ def get_airflow_dag_metadata(dag_id: str) -> str:
     )
 
 
-@aero_tool
 def get_airflow_dag_source(dag_id: str) -> str:
     """Return the Python source code for an Airflow DAG."""
 
@@ -264,7 +229,6 @@ def get_airflow_dag_source(dag_id: str) -> str:
     )
 
 
-@aero_tool
 def summarize_airflow_task_flow(dag_id: str) -> str:
     """Return a concise task dependency flow for an Airflow DAG."""
 
@@ -288,7 +252,6 @@ def summarize_airflow_task_flow(dag_id: str) -> str:
     )
 
 
-@aero_tool
 def summarize_airflow_schedule(dag_id: str) -> str:
     """Return schedule, catchup, tags, and max-active-run
     settings for an Airflow DAG."""
@@ -322,7 +285,6 @@ def summarize_airflow_schedule(dag_id: str) -> str:
     )
 
 
-@aero_tool
 def scan_airflow_dag_risks(dag_id: str) -> str:
     """Return lightweight static risk signals for an Airflow DAG."""
 
@@ -380,325 +342,90 @@ def scan_airflow_dag_risks(dag_id: str) -> str:
     )
 
 
-AIRFLOW_TOOLS = [
-    get_airflow_dag_metadata,
-    get_airflow_dag_source,
-    summarize_airflow_task_flow,
-    summarize_airflow_schedule,
-    scan_airflow_dag_risks,
-]
-
-
 # ---------------------------------------------------------------------------
-# Prompt
+# Context formatting
 # ---------------------------------------------------------------------------
 
 
-def build_prompt(
+def format_frontend_context(
+    page_context: dict[str, str | None],
+) -> str:
+    return json.dumps(
+        page_context,
+        indent=2,
+        sort_keys=True,
+    )
+
+
+def build_mock_answer(
     question: str,
-    page_context: dict,
+    page_context: dict[str, str | None],
     dag_id: str | None,
     dag_metadata: dict[str, Any],
     dag_path: Path | None,
     dag_source: str,
-    chat_history: list[dict[str, str]],
 ) -> str:
-
-    history = "\n".join(
-        f"{item['role']}: {item['content']}"
-        for item in chat_history[-8:]
-    ) or "No prior conversation."
-
-    tool_context = (
-        "No DAG is currently available in Aero context."
+    normalized_question = question.lower()
+    context_block = (
+        "Frontend context passed to Chainlit:\n"
+        "```json\n"
+        f"{format_frontend_context(page_context)}\n"
+        "```"
     )
 
-    if dag_id and dag_metadata:
-        tool_context = "\n\n".join(
-            [
-                (
-                    "Airflow DAG metadata:\n"
-                    + get_airflow_dag_metadata(dag_id)
-                ),
-                (
-                    "Task flow:\n"
-                    + summarize_airflow_task_flow(dag_id)
-                ),
-                (
-                    "Schedule:\n"
-                    + summarize_airflow_schedule(dag_id)
-                ),
-                (
-                    "Risk scan:\n"
-                    + scan_airflow_dag_risks(dag_id)
-                ),
-                (
-                    f"DAG file: {dag_path}\n\n"
-                    "DAG source:\n"
-                    "```python\n"
-                    f"{dag_source}\n"
-                    "```"
-                ),
-            ]
+    if not dag_id:
+        return (
+            "Mock response: I do not have a DAG in the current "
+            "frontend context yet. Open a DAG, task, run, graph, "
+            "or grid page and I will reflect that context here.\n\n"
+            f"{context_block}"
         )
 
-    return f"""
-You are Aero, an Apache Airflow assistant.
-
-Answer the user's latest question.
-
-Guidelines:
-- Be conversational and concise.
-- Use the Airflow page/DAG context silently.
-- Do not dump raw context ids or debug fields.
-- If the user asks what the DAG does, explain the purpose,
-  task flow, dependencies, schedule and retry details when visible.
-- If the user asks a follow-up, use the recent chat history.
-- Do not invent external systems or behavior not present in
-  the metadata/source.
-- If needed context is missing, ask the user to open the
-  relevant DAG/task/run page.
-
-Recent chat history:
-{history}
-
-Latest user question:
-{question}
-
-Current Airflow page context:
-{page_context}
-
-Tool results:
-{tool_context}
-"""
-
-
-# ---------------------------------------------------------------------------
-# Strands
-# ---------------------------------------------------------------------------
-
-
-def get_strands_agent():
-    provider = os.getenv(
-        "AERO_LLM_PROVIDER",
-        "ollama",
-    ).lower()
-
-    from strands import Agent
-
-    if provider == "bedrock":
-        return Agent(
-            tools=AIRFLOW_TOOLS,
+    if dag_id and not dag_source:
+        return (
+            f"Mock response: I received DAG `{dag_id}` from the "
+            "frontend context, but I could not read its source "
+            f"under `{DAGS_FOLDER}`.\n\n"
+            f"{context_block}"
         )
 
-    from strands.models.ollama import OllamaModel
+    if "flow" in normalized_question or "dependenc" in normalized_question:
+        mock_body = (
+            "Mock task-flow response:\n"
+            f"{summarize_airflow_task_flow(dag_id)}"
+        )
+    elif "schedule" in normalized_question or "catchup" in normalized_question:
+        mock_body = (
+            "Mock schedule response:\n"
+            f"{summarize_airflow_schedule(dag_id)}"
+        )
+    elif "risk" in normalized_question or "scan" in normalized_question:
+        mock_body = (
+            "Mock risk-scan response:\n"
+            f"{scan_airflow_dag_risks(dag_id)}"
+        )
+    elif "source" in normalized_question or "code" in normalized_question:
+        source_preview = dag_source[:3000]
+        if len(dag_source) > len(source_preview):
+            source_preview += "\n\n# ... mock preview truncated ..."
+        mock_body = (
+            f"Mock source response for DAG `{dag_id}` "
+            f"from `{dag_path}`:\n"
+            "```python\n"
+            f"{source_preview}\n"
+            "```"
+        )
+    else:
+        mock_body = mock_dag_explanation(
+            dag_id,
+            dag_metadata,
+            dag_path,
+        )
 
-    return Agent(
-        model=OllamaModel(
-            host=DEFAULT_OLLAMA_HOST,
-            model_id=DEFAULT_OLLAMA_MODEL,
-        ),
-        tools=AIRFLOW_TOOLS,
+    return (
+        f"{mock_body}\n\n"
+        f"{context_block}"
     )
-
-
-# ---------------------------------------------------------------------------
-# Ollama streaming
-# ---------------------------------------------------------------------------
-
-
-def _ollama_stream_worker(
-    prompt: str,
-    loop: asyncio.AbstractEventLoop,
-    queue: asyncio.Queue,
-) -> None:
-    """
-    Run the blocking urllib Ollama stream in a worker thread.
-
-    Tokens are forwarded safely back to the asyncio event loop
-    through an asyncio.Queue.
-    """
-
-    try:
-        payload = {
-            "model": DEFAULT_OLLAMA_MODEL,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are Aero, a concise Apache "
-                        "Airflow assistant."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
-            "stream": True,
-        }
-
-        data = json.dumps(payload).encode("utf-8")
-
-        req = request.Request(
-            f"{DEFAULT_OLLAMA_HOST.rstrip('/')}/api/chat",
-            data=data,
-            headers={
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-
-        with request.urlopen(
-            req,
-            timeout=120,
-        ) as response:
-
-            for raw_line in response:
-                if not raw_line:
-                    continue
-
-                line = raw_line.decode(
-                    "utf-8",
-                    errors="ignore",
-                ).strip()
-
-                if not line:
-                    continue
-
-                try:
-                    chunk = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-
-                if chunk.get("error"):
-                    raise RuntimeError(
-                        chunk["error"]
-                    )
-
-                token = (
-                    chunk
-                    .get("message", {})
-                    .get("content", "")
-                )
-
-                if token:
-                    asyncio.run_coroutine_threadsafe(
-                        queue.put(
-                            ("token", token)
-                        ),
-                        loop,
-                    ).result()
-
-                if chunk.get("done"):
-                    break
-
-    except Exception as error:
-        asyncio.run_coroutine_threadsafe(
-            queue.put(
-                ("error", error)
-            ),
-            loop,
-        ).result()
-
-    finally:
-        asyncio.run_coroutine_threadsafe(
-            queue.put(
-                ("done", None)
-            ),
-            loop,
-        ).result()
-
-
-async def stream_ollama(
-    prompt: str,
-) -> AsyncIterator[str]:
-    """
-    Stream Ollama tokens without blocking Chainlit's event loop.
-    """
-
-    queue: asyncio.Queue = asyncio.Queue()
-
-    loop = asyncio.get_running_loop()
-
-    worker = asyncio.create_task(
-        asyncio.to_thread(
-            _ollama_stream_worker,
-            prompt,
-            loop,
-            queue,
-        )
-    )
-
-    try:
-        while True:
-            event_type, value = await queue.get()
-
-            if event_type == "token":
-                yield value
-
-            elif event_type == "error":
-                raise value
-
-            elif event_type == "done":
-                break
-
-    finally:
-        await worker
-
-
-# ---------------------------------------------------------------------------
-# Strands fallback
-# ---------------------------------------------------------------------------
-
-
-async def stream_strands(
-    prompt: str,
-) -> AsyncIterator[str]:
-    """
-    Current compatibility path for Strands.
-
-    This keeps Bedrock/Strands working even if the installed
-    Strands version does not expose the same streaming API.
-
-    The Chainlit/Ollama path streams token-by-token.
-    """
-
-    agent = get_strands_agent()
-
-    result = await asyncio.to_thread(
-        agent,
-        prompt,
-    )
-
-    text = str(result)
-
-    if text:
-        yield text
-
-
-# ---------------------------------------------------------------------------
-# Unified LLM stream
-# ---------------------------------------------------------------------------
-
-
-async def stream_llm(
-    prompt: str,
-) -> AsyncIterator[str]:
-
-    provider = os.getenv(
-        "AERO_LLM_PROVIDER",
-        "ollama",
-    ).lower()
-
-    if provider == "ollama":
-        async for token in stream_ollama(prompt):
-            yield token
-
-        return
-
-    async for token in stream_strands(prompt):
-        yield token
 
 
 # ---------------------------------------------------------------------------
@@ -766,54 +493,16 @@ async def stream_answer_with_context(
         get_current_dag_details
     )
 
-    chat_history = (
-        cl.user_session.get("chat_history")
-        or []
-    )
-
-    if dag_id and not dag_source:
-        yield (
-            f"I found DAG `{dag_id}`, but I could not "
-            f"read its source under `{DAGS_FOLDER}`."
-        )
-        return
-
-    prompt = build_prompt(
+    answer = build_mock_answer(
         question=question,
         page_context=page_context,
         dag_id=dag_id,
         dag_metadata=dag_metadata,
         dag_path=dag_path,
         dag_source=dag_source,
-        chat_history=chat_history,
     )
 
-    try:
-        async for token in stream_llm(prompt):
-            yield token
-
-    except Exception as error:
-        if not dag_id:
-            yield (
-                "I could not reach the configured LLM yet. "
-                "Open a DAG page and ask again, or check "
-                "the Ollama/Bedrock configuration."
-                f"\n\nLLM error: "
-                f"`{error.__class__.__name__}: {error}`"
-            )
-
-            return
-
-        yield (
-            fallback_dag_explanation(
-                dag_id,
-                dag_metadata,
-                dag_path,
-            )
-            + "\n\n"
-            + "LLM error: "
-            + f"`{error.__class__.__name__}: {error}`"
-        )
+    yield answer
 
 
 # ---------------------------------------------------------------------------
@@ -972,10 +661,18 @@ async def on_chat_start() -> None:
         [],
     )
 
+    page_context = normalize_context(
+        get_aero_context()
+    )
+
     await cl.Message(
         content=(
             "Hi, I am Aero.\n\n"
             f"Current focus: {context_title()}\n\n"
+            "Frontend context passed to Chainlit:\n"
+            "```json\n"
+            f"{format_frontend_context(page_context)}\n"
+            "```\n\n"
             "Pick an action, or ask a follow-up."
         ),
         actions=quick_actions(),
