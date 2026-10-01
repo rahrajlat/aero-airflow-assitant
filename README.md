@@ -30,6 +30,14 @@ Right now, this project does three main things:
 
 This repository packages the full local development stack: Airflow, PostgreSQL, Redis, Celery workers, a custom Aero plugin, and a demo DAG for experimentation.
 
+## How it works
+
+Aero is built around a simple pattern: when an Airflow page loads, the frontend captures the current page context and sends it to the backend. That context includes information such as the page type, DAG id, task id, run id, path, and source URL.
+
+The backend stores that context and the Chainlit app reads it back when the user asks a question. The model then sees the current Airflow context together with the relevant DAG metadata and source code, so answers are grounded in the page the user is looking at rather than generic Airflow knowledge.
+
+At the moment, this is focused on DAG pages and related DAG/task context. The design is intentionally extensible: the same pattern can be used for task pages, run pages, logs, or any future Airflow surface that exposes useful metadata. In other words, the idea is not just “AI for DAGs,” but “AI context-aware assistant for the Airflow UI.”
+
 ## What are Chainlit and Strands?
 
 ### Chainlit
