@@ -42,7 +42,7 @@ At the moment, this is focused on DAG pages and related DAG/task context. The de
 
 ### Chainlit
 
-[Chainlit](https://github.com/Chainlit/chainlit) is a lightweight framework for building chat-based AI applications with Python. It eases the creation of a frontend by providing a Pythonic way to add chat interfaces, so developers can focus on the assistant logic instead of building the conversational UI from scratch. In this project, it provides the browser-based chat experience for Aero.
+[Chainlit](https://github.com/Chainlit/chainlit) is a lightweight framework for building chat-based AI applications with Python. It eases the creation of a frontend by providing a Pythonic way to add chat interfaces, so developers can focus on the assistant logic instead of building the conversational UI from scratch. Chainlit can also be mounted as a FastAPI application, and Airflow 3 natively supports FastAPI apps through its plugin architecture. In this project, that makes it possible to serve the browser-based Aero chat experience directly from the Airflow environment.
 
 ### Strands
 
