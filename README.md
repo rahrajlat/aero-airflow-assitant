@@ -138,19 +138,6 @@ Once the stack is running, use these endpoints:
 - Aero app: http://localhost:8080/aero
 - Aero Chainlit assistant: http://localhost:8080/aero/chainlit
 
-## Configuration
-
-Configuration is defined in `airflow_docker/docker-compose.yaml`.
-
-Important defaults include:
-
-- `AIRFLOW__CORE__EXECUTOR=CeleryExecutor`
-- `AIRFLOW__CORE__LOAD_EXAMPLES=false`
-- `AERO_LLM_PROVIDER=${AERO_LLM_PROVIDER:-ollama}`
-- `AERO_OLLAMA_HOST=${AERO_OLLAMA_HOST:-http://host.docker.internal:11434}`
-- `AERO_OLLAMA_MODEL=${AERO_OLLAMA_MODEL:-llama3.1:latest}`
-
-The configuration mounts local directories so the config, DAGs, logs, and plugin files are editable without rebuilding the entire environment.
 
 ## API and Integration Points
 
