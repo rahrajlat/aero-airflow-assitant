@@ -1,0 +1,96 @@
+:root {
+  color-scheme: dark;
+  --aero-bg: #111827;
+  --aero-surface: #1f2937;
+  --aero-surface-soft: #243447;
+  --aero-border: #334155;
+  --aero-text: #f8fafc;
+  --aero-muted: #9ca3af;
+  --aero-cyan: #06b6d4;
+  --aero-cyan-soft: rgba(6, 182, 212, 0.18);
+  --aero-green: #22c55e;
+}
+
+body {
+  background: var(--aero-bg) !important;
+  color: var(--aero-text) !important;
+}
+
+header,
+aside,
+[data-testid="watermark"] {
+  display: none !important;
+}
+
+main,
+.MuiBox-root {
+  background: var(--aero-bg) !important;
+}
+
+button {
+  border-radius: 6px !important;
+}
+
+button[aria-label],
+button:has(svg) {
+  color: var(--aero-text) !important;
+}
+
+textarea,
+input {
+  background: #202020 !important;
+  border-color: var(--aero-border) !important;
+  color: var(--aero-text) !important;
+}
+
+textarea::placeholder,
+input::placeholder {
+  color: var(--aero-muted) !important;
+}
+
+[class*="Message"],
+[data-testid*="message"] {
+  color: var(--aero-text) !important;
+}
+
+[class*="message"] a,
+[data-testid*="message"] a {
+  color: #67e8f9 !important;
+}
+
+[class*="message"] code,
+[data-testid*="message"] code {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid var(--aero-border) !important;
+  border-radius: 4px !important;
+  color: #cffafe !important;
+}
+
+[class*="message"] pre,
+[data-testid*="message"] pre {
+  background: #0b1220 !important;
+  border: 1px solid var(--aero-border) !important;
+  border-radius: 6px !important;
+}
+
+button:has(span),
+[role="button"] {
+  border-color: var(--aero-border) !important;
+}
+
+button:hover,
+[role="button"]:hover {
+  background: var(--aero-cyan-soft) !important;
+  border-color: var(--aero-cyan) !important;
+}
+
+form,
+[class*="Input"],
+[class*="Composer"] {
+  background: #202020 !important;
+  border-color: var(--aero-border) !important;
+}
+
+svg {
+  color: inherit;
+}
