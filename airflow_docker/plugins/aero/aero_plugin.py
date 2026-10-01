@@ -19,7 +19,7 @@ except ImportError:
 dependencies = [Depends(get_user)] if get_user is not None else []
 app = FastAPI(title="Aero", dependencies=dependencies, root_path="/aero")
 static_dir = Path(__file__).parent
-chainlit_app_path = Path("/opt/airflow/config/aero_chainlit.py")
+chainlit_app_path = Path("/opt/airflow/aero/chainlit_app.py")
 app.mount("/static", StaticFiles(directory=static_dir), name="aero_static")
 
 

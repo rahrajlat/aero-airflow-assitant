@@ -5,11 +5,19 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import sys
 from http.cookies import SimpleCookie
 from pathlib import Path
 from typing import Any, AsyncIterator
 
 import chainlit as cl
+
+AERO_PLUGIN_DIR = Path(
+    os.getenv("AERO_PLUGIN_DIR", "/opt/airflow/plugins/aero")
+)
+
+if str(AERO_PLUGIN_DIR) not in sys.path:
+    sys.path.insert(0, str(AERO_PLUGIN_DIR))
 
 from aero_context import get_aero_context as get_stored_aero_context
 

@@ -145,7 +145,7 @@ The Aero stack integrates with Airflow through:
 
 - the custom plugin registration in `aero_plugin.py`
 - context storage via `aero_context.py`
-- the Chainlit app configured in `aero_chainlit.py`
+- the Chainlit app configured in `airflow_docker/aero/chainlit_app.py`
 - FastAPI endpoints mounted under the Airflow plugin path
 
 In practice, the assistant can inspect:
