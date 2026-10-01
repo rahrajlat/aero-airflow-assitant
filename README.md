@@ -20,6 +20,8 @@
 
 Aero is a local Apache Airflow 3 assistant layer built with Chainlit and FastAPI. It brings DAG-aware AI support into the Airflow environment so you can inspect DAG metadata, review source code, and ask contextual questions about a DAG without leaving the Airflow UI experience.
 
+> Note: This is an idea that can be adapted to any LLM provider. For the local demo, it is configured to run with Ollama, but the design is intentionally modular so the same pattern can work with other model backends.
+
 Right now, this project does three main things:
 
 - runs a local Airflow 3 stack with PostgreSQL, Redis, and Celery workers
@@ -27,6 +29,18 @@ Right now, this project does three main things:
 - exposes a Chainlit chat app that can inspect DAG source files and answer questions about the current DAG/task context
 
 This repository packages the full local development stack: Airflow, PostgreSQL, Redis, Celery workers, a custom Aero plugin, and a demo DAG for experimentation.
+
+## What are Chainlit and Strands?
+
+### Chainlit
+
+[Chainlit](https://github.com/Chainlit/chainlit) is a lightweight framework for building chat-based AI applications with Python. In this project, it provides the conversational UI for Aero and lets the assistant talk to the user in a browser-based chat experience.
+
+### Strands
+
+[Strands](https://strandsagents.com/) is a framework for building tool-using AI agents. It helps connect an LLM to structured tools so the model can act on real data sources instead of only answering from general knowledge. In Aero, that means the assistant can inspect Airflow metadata, read DAG source files, and summarize task flows and risks using real project context.
+
+Together, they give Aero a simple but powerful pattern: a chat UI from Chainlit and tool-calling agent behavior from Strands, grounded in Airflow metadata and source code.
 
 ## Demo
 
