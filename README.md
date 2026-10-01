@@ -30,10 +30,7 @@ This repository packages the full local development stack: Airflow, PostgreSQL, 
 
 ## Demo
 
-<video controls width="900">
-  <source src="demo-aero.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[![Aero demo](https://img.youtube.com/vi/8SOVYaV-yZE/maxresdefault.jpg)](https://youtu.be/8SOVYaV-yZE)
 
 ## Table of Contents
 
