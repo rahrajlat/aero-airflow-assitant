@@ -32,9 +32,7 @@ This repository packages the full local development stack: Airflow, PostgreSQL, 
 
 ## Demo
 
-![Aero demo screenshot 1](docs/demo1.png)
-
-![Aero demo screenshot 2](docs/demo2.png)
+![Aero LinkedIn demo](docs/Aero-LinkedIn.gif)
 
 ## How it works
 
